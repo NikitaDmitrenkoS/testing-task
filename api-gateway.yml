@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: github-repo-api-cluster
+
+  TaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ecsTaskExecutionPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetAuthorizationToken
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+
+  FargateTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: github-repo-api-task
+      Cpu: '512'
+      Memory: '1024'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: github-repo-api-container
+          Image: <AWS_ECR_IMAGE_URI>  # Update with your ECR image URL
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8080
+              Protocol: tcp
+
+  FargateService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref ECSCluster
+      DesiredCount: 1
+      LaunchType: FARGATE
+      TaskDefinition: !Ref FargateTaskDefinition
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - subnet-xxxxxxxx  # Replace with your subnet ID
+          SecurityGroups:
+            - sg-xxxxxxxx  # Replace with your security group ID

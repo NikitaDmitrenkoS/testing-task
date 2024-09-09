@@ -1,0 +1,71 @@
+openapi: 3.0.0
+info:
+  title: GitHub Repositories API
+  version: 1.0.0
+  description: This API retrieves repositories for a GitHub user.
+
+paths:
+  /github/{username}/repositories:
+    get:
+      summary: Get non-fork repositories for a given GitHub user
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Accept
+          in: header
+          required: true
+          schema:
+            type: string
+            enum: [application/json, application/xml]
+      responses:
+        200:
+          description: List of repositories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RepositoryResponse'
+        404:
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        406:
+          description: Not acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    RepositoryResponse:
+      type: object
+      properties:
+        repositoryName:
+          type: string
+        ownerLogin:
+          type: string
+        branches:
+          type: array
+          items:
+            $ref: '#/components/schemas/BranchResponse'
+    BranchResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        commitSha:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
